@@ -47,15 +47,10 @@ func New(config map[interface{}]interface{}) interface{} {
 		messages:       make(chan *pulsar.Message, 10),
 		decoder:        codec.NewDecoder(codertype),
 	}
-	//glog.Fatalf("%s", config["serviceUrl"])
-	/*
-	serviceUrl := config["serviceUrl"].(string)
-	topic := config["topic"].(string)
-	subscriptionName := config["subscriptionName"].(string)
-	*/
 	client, err := pulsar.NewClient(pulsar.ClientOptions{URL: serviceUrl})
+	PulsarInput.client = client
 	// defer client.Close()
-	c, err := client.Subscribe(pulsar.ConsumerOptions{
+	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
 		Topic:            topic,
 		SubscriptionName: subscriptionName,
 		Type:             pulsar.Shared,
@@ -64,9 +59,10 @@ func New(config map[interface{}]interface{}) interface{} {
 		glog.Fatalf("could not init Consumer: %s", err)
 	}
 	// defer c.Close()
+	PulsarInput.consumer = consumer
 	go func() {
 		for {
-			msg, err := c.Receive(context.Background())
+			msg, err := consumer.Receive(context.Background())
 			if err == nil {
 				PulsarInput.messages <- &msg
 			} else {
