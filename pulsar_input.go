@@ -14,6 +14,7 @@ type PulsarInput struct{
 	messages chan *pulsar.Message
 	consumer pulsar.Consumer
 	client   pulsar.Client
+	isShuttingDown bool
 
 }
 
@@ -49,7 +50,7 @@ func New(config map[interface{}]interface{}) interface{} {
 	}
 	client, err := pulsar.NewClient(pulsar.ClientOptions{URL: serviceUrl})
 	PulsarInput.client = client
-	// defer client.Close()
+	//defer client.Close()
 	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
 		Topic:            topic,
 		SubscriptionName: subscriptionName,
@@ -58,14 +59,19 @@ func New(config map[interface{}]interface{}) interface{} {
 	if err != nil {
 		glog.Fatalf("could not init Consumer: %s", err)
 	}
-	// defer c.Close()
+	//defer consumer.Close()
 	PulsarInput.consumer = consumer
 	go func() {
+		if PulsarInput.isShuttingDown {
+			return
+		}
 		for {
 			msg, err := consumer.Receive(context.Background())
 			if err == nil {
 				PulsarInput.messages <- &msg
+				consumer.Ack(msg)
 			} else {
+				// consumer.Nack(msg)
 				// The client will automatically try to recover from all errors.
 				glog.Errorf("Consumer error: %v (%v)\n", err, msg)
 			}
@@ -83,6 +89,7 @@ func (p *PulsarInput) ReadOneEvent() map[string]interface{} {
 
 //Shutdown 关闭需要做的事情
 func (p *PulsarInput) Shutdown() {
+	p.isShuttingDown = true
 	p.consumer.Close()
 	p.client.Close()
 }
