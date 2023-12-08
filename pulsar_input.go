@@ -62,10 +62,10 @@ func New(config map[interface{}]interface{}) interface{} {
 	//defer consumer.Close()
 	PulsarInput.consumer = consumer
 	go func() {
-		if PulsarInput.isShuttingDown {
-			return
-		}
 		for {
+			if PulsarInput.isShuttingDown {
+				return
+			}
 			msg, err := consumer.Receive(context.Background())
 			if err == nil {
 				PulsarInput.messages <- &msg
