@@ -5,6 +5,7 @@
 ```
 inputs:
     - '/mnt/c/work/gohangout/pulsar_input.so':
+        codec: json
         serviceUrl: "pulsar://dasds:6650"
         topic: "persistent://dasdasd/dasd/dnlog"
         subscriptionName: "zcola"
